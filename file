@@ -1,4 +1,5 @@
 # MySQL configurations for Helm dependency
+# you can find more details about this here https://artifacthub.io/packages/helm/bitnami/mysql
 mysql:
   enabled: true
   fullnameOverride: "mysql"
@@ -27,6 +28,7 @@ mysql:
       commit;
 
 # OpenSearch Helm Dependency
+# you can find more details about this here https://artifacthub.io/packages/helm/opensearch-project-helm-charts/opensearch/2.12.2
 opensearch:
   enabled: true
   clusterName: opensearch
@@ -51,6 +53,7 @@ opensearch:
       memory: "2048M"
 
 # Airflow configurations for Helm dependency
+# you can find more details about this here https://github.com/airflow-helm/charts
 airflow:
   enabled: true
   dags:
@@ -65,3 +68,61 @@ airflow:
       storageClass: longhorn    # Use Longhorn StorageClass
       size: 1Gi
       accessMode: ReadWriteMany
+
+# Other unchanged configurations
+airflow:
+  executor: "KubernetesExecutor"
+  config:
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth"
+  users:
+    - username: admin
+      password: admin
+      role: Admin
+      email: spiderman@superhero.org
+      firstName: Peter
+      lastName: Parker
+  web:
+    extraVolumes:
+      - name: pod-template
+        configMap:
+          name: openmetadata-pod-template
+          defaultMode: 420
+    extraVolumeMounts:
+      - name: pod-template
+        readOnly: true
+        subPath: pod_template.yaml
+        mountPath: /opt/airflow/pod_templates/pod_template.yaml
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+  postgresql:
+    enabled: false
+  workers:
+    enabled: false
+  flower:
+    enabled: false
+  redis:
+    enabled: false
+  externalDatabase:
+    type: mysql
+    host: mysql
+    port: 3306
+    database: airflow_db
+    user: airflow_user
+    passwordSecret: airflow-mysql-secrets
+    passwordSecretKey: airflow-mysql-password
+  serviceAccount:
+    create: true
+    name: "airflow"
+  scheduler:
+    logCleanup:
+      enabled: false
