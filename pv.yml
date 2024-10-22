@@ -9,7 +9,6 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: /mnt/data/mysql   # Ensure this path exists on all worker nodes
-
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -22,7 +21,6 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: /mnt/data/opensearch   # Ensure this path exists on all worker nodes
-
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -35,7 +33,6 @@ spec:
     - ReadWriteMany
   hostPath:
     path: /mnt/data/airflow/dags   # Ensure this path exists on all worker nodes
-
 ---
 apiVersion: v1
 kind: PersistentVolume
