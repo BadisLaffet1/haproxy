@@ -1,0 +1,114 @@
+# MySQL configuration for HA
+mysql:
+  enabled: true
+  fullnameOverride: "mysql"
+  architecture: "replication"  # Enable replication for high availability
+  image:
+    pullPolicy: "Always"
+  auth:
+    rootPassword: password    # Replace with a secure method in production
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: "gp2"  # Replace with your cloud provider's HA storage class (e.g., premium-rwo for GCP)
+    service:
+      nodePort: 3306
+  replicaCount: 3  # Number of MySQL replicas for high availability
+  initdbScripts:
+    init_openmetadata_db_scripts.sql: |
+      CREATE DATABASE openmetadata_db;
+      CREATE USER 'openmetadata_user'@'%' IDENTIFIED BY 'openmetadata_password';
+      GRANT ALL PRIVILEGES ON openmetadata_db.* TO 'openmetadata_user'@'%' WITH GRANT OPTION;
+      commit;
+
+# OpenSearch configuration for HA
+opensearch:
+  enabled: true
+  clusterName: opensearch
+  fullnameOverride: opensearch
+  imagePullPolicy: Always
+  opensearchJavaOpts: "-Xmx1g -Xms1g"
+  replicas: 3  # Multiple replicas for high availability
+  persistence:
+    enabled: true
+    size: 30Gi
+    storageClass: "gp2"  # Use HA storage class for your environment
+  config:
+    opensearch.yml: |
+      plugins.security.disabled: true
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2048M"
+
+# Airflow configuration for HA
+airflow:
+  enabled: true
+  airflow:
+    image:
+      repository: docker.getcollate.io/openmetadata/ingestion
+      tag: 1.5.7
+      pullPolicy: "IfNotPresent"
+    executor: "KubernetesExecutor"
+    config:
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth"
+    users:
+    - username: admin
+      password: admin
+      role: Admin
+      email: spiderman@superhero.org
+      firstName: Peter
+      lastName: Parker
+  web:
+    service:
+      type: LoadBalancer  # Expose Airflow web server via a load balancer for HA
+    extraVolumes:
+    - name: pod-template
+      configMap:
+        name: openmetadata-pod-template
+        defaultMode: 420
+    extraVolumeMounts:
+      - name: pod-template
+        readOnly: true
+        subPath: pod_template.yaml
+        mountPath: /opt/airflow/pod_templates/pod_template.yaml
+  workers:
+    enabled: true
+    replicas: 3  # Scale up the number of Airflow worker nodes
+  redis:
+    enabled: true  # Required for HA
+  externalDatabase:
+    type: mysql
+    host: mysql
+    port: 3306
+    database: airflow_db
+    user: airflow_user
+    passwordSecret: airflow-mysql-secrets
+    passwordSecretKey: airflow-mysql-password
+  dags:
+    persistence:
+      enabled: true
+      storageClass: "gp2"  # Adjust the storage class
+      accessMode: ReadWriteMany
+      size: 2Gi
+  logs:
+    persistence:
+      enabled: true
+      storageClass: "gp2"
+      accessMode: ReadWriteMany
+      size: 2Gi
+
+# Common Configuration
+common:
+  persistence:
+    storageClass: "gp2"  # Define HA storage class across the components
+
+# OpenMetadata UI exposure
+openmetadata:
+  service:
+    type: LoadBalancer  # Expose OpenMetadata UI through a LoadBalancer
+  replicaCount: 3  # Scale up for high availability
