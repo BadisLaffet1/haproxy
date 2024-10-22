@@ -8,7 +8,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /mnt/data/mysql   # Specify the host path directory on the node
+    path: /mnt/data/mysql   # Ensure this path exists on all worker nodes
 
 ---
 apiVersion: v1
@@ -21,7 +21,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /mnt/data/opensearch   # Specify the host path directory on the node
+    path: /mnt/data/opensearch   # Ensure this path exists on all worker nodes
 
 ---
 apiVersion: v1
@@ -34,7 +34,7 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: /mnt/data/airflow/dags   # Specify the host path directory on the node
+    path: /mnt/data/airflow/dags   # Ensure this path exists on all worker nodes
 
 ---
 apiVersion: v1
@@ -47,4 +47,4 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: /mnt/data/airflow/logs   # Specify the host path directory on the node
+    path: /mnt/data/airflow/logs   # Ensure this path exists on all worker nodes
