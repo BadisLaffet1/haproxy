@@ -18,11 +18,11 @@ airflow:
   dags:
     path: /airflow-dags/dags
     persistence:
-      enabled: false  # Persistence disabled because using external PVCs
+      enabled: false  # Persistence disabled because we are mounting external PVCs
   logs:
     path: /airflow-logs
     persistence:
-      enabled: false  # Persistence disabled because using external PVCs
+      enabled: false  # Persistence disabled because we are mounting external PVCs
 
 # MySQL configurations for Helm dependency
 mysql:
