@@ -61,13 +61,13 @@ airflow:
     persistence:
       enabled: true
       storageClass: nfs-client    # Update to use NFS StorageClass
-      size: 1Gi
+      size: 1Gi                    # This matches the current size of the PVC
       accessMode: ReadWriteMany
   logs:
     persistence:
       enabled: true
       storageClass: nfs-client    # Update to use NFS StorageClass
-      size: 1Gi
+      size: 10Gi                   # This matches the current size of the PVC
       accessMode: ReadWriteMany
 
 # Other unchanged configurations
