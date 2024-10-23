@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: default
+  name: openmetadata-dependencies-logs
+  labels:
+    app: airflow
+spec:
+  accessModes:
+    - ReadWriteOnce  # Longhorn supports this mode
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
