@@ -1,19 +1,19 @@
-# dags_pvc.yml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   namespace: default
   name: openmetadata-dependencies-dags
   labels:
-    app.kubernetes.io/managed-by: "Helm"   # Required by Helm
+    storage.k8s.io/name: nfs
     app: airflow
+    app.kubernetes.io/managed-by: Helm
   annotations:
-    meta.helm.sh/release-name: "openmetadata-dependencies"  # Helm release name
-    meta.helm.sh/release-namespace: "default"               # Helm release namespace
+    meta.helm.sh/release-name: openmetadata-dependencies
+    meta.helm.sh/release-namespace: default
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: longhorn   # Use Longhorn storage class
+  storageClassName: nfs-client
   resources:
     requests:
       storage: 1Gi
