@@ -1,0 +1,135 @@
+# Airflow configurations for Helm dependency
+airflow:
+  airflow:
+    extraVolumeMounts:
+      - mountPath: /airflow-logs
+        name: nfs-airflow-logs
+      - mountPath: /airflow-dags/dags
+        name: nfs-airflow-dags
+    extraVolumes:
+      - name: nfs-airflow-logs
+        persistentVolumeClaim:
+          claimName: openmetadata-dependencies-logs
+      - name: nfs-airflow-dags
+        persistentVolumeClaim:
+          claimName: openmetadata-dependencies-dags
+    config:
+      AIRFLOW__OPENMETADATA_AIRFLOW_APIS__DAG_GENERATED_CONFIGS: "/airflow-dags/dags"
+  dags:
+    path: /airflow-dags/dags
+    persistence:
+      enabled: false  # Persistence disabled because using external PVCs
+  logs:
+    path: /airflow-logs
+    persistence:
+      enabled: false  # Persistence disabled because using external PVCs
+
+# MySQL configurations for Helm dependency
+mysql:
+  enabled: true
+  fullnameOverride: "mysql"
+  architecture: standalone
+  image:
+    pullPolicy: "Always"
+  auth:
+    rootPassword: password    # to be provided by CI/CD
+  primary:
+    extraFlags: "--sort_buffer_size=10M"
+    persistence:
+      storageClass: longhorn    # Use Longhorn StorageClass
+      size: 50Gi
+    service:
+      nodePort: 3306
+  initdbScripts:
+    init_openmetadata_db_scripts.sql: |
+      CREATE DATABASE openmetadata_db;
+      CREATE USER 'openmetadata_user'@'%' IDENTIFIED BY 'openmetadata_password';
+      GRANT ALL PRIVILEGES ON openmetadata_db.* TO 'openmetadata_user'@'%' WITH GRANT OPTION;
+      commit;
+    init_airflow_db_scripts.sql: |
+      CREATE DATABASE airflow_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      CREATE USER 'airflow_user'@'%' IDENTIFIED BY 'airflow_pass';
+      GRANT ALL PRIVILEGES ON airflow_db.* TO 'airflow_user'@'%' WITH GRANT OPTION;
+      commit;
+
+# OpenSearch Helm Dependency
+opensearch:
+  enabled: true
+  clusterName: opensearch
+  fullnameOverride: opensearch
+  nodeGroup: ""
+  imagePullPolicy: Always
+  opensearchJavaOpts: "-Xmx1g -Xms1g"
+  persistence:
+    storageClass: longhorn    # Use Longhorn StorageClass
+    size: 30Gi
+  protocol: http
+  config:
+    opensearch.yml: |
+      plugins.security.disabled: true
+  singleNode: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256M"
+    limits:
+      cpu: "2000m"
+      memory: "2048M"
+
+# Other unchanged configurations for Airflow
+airflow:
+  executor: "KubernetesExecutor"
+  config:
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth"
+  users:
+    - username: admin
+      password: admin
+      role: Admin
+      email: spiderman@superhero.org
+      firstName: Peter
+      lastName: Parker
+  web:
+    extraVolumes:
+      - name: pod-template
+        configMap:
+          name: openmetadata-pod-template
+          defaultMode: 420
+    extraVolumeMounts:
+      - name: pod-template
+        readOnly: true
+        subPath: pod_template.yaml
+        mountPath: /opt/airflow/pod_templates/pod_template.yaml
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+  postgresql:
+    enabled: false
+  workers:
+    enabled: false
+  flower:
+    enabled: false
+  redis:
+    enabled: false
+  externalDatabase:
+    type: mysql
+    host: mysql
+    port: 3306
+    database: airflow_db
+    user: airflow_user
+    passwordSecret: airflow-mysql-secrets
+    passwordSecretKey: airflow-mysql-password
+  serviceAccount:
+    create: true
+    name: "airflow"
+  scheduler:
+    logCleanup:
+      enabled: false
