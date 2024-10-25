@@ -1,26 +1,22 @@
 airflow:
-  airflow:
-    extraVolumeMounts:
-      - mountPath: /airflow-logs
-        name: longhorn-airflow-logs
-      - mountPath: /airflow-dags/dags
-        name: longhorn-airflow-dags
-    extraVolumes:
-      - name: longhorn-airflow-logs
-        persistentVolumeClaim:
-          claimName: openmetadata-dependencies-logs
-      - name: longhorn-airflow-dags
-        persistentVolumeClaim:
-          claimName: openmetadata-dependencies-dags
-    config:
-      AIRFLOW__OPENMETADATA_AIRFLOW_APIS__DAG_GENERATED_CONFIGS: "/airflow-dags/dags"
-
   dags:
-    path: /airflow-dags/dags
     persistence:
-      enabled: false
+      enabled: true
+      existingClaim: ""
+      storageClassName: longhorn
+      accessMode: ReadWriteMany
+      size: 10Gi  # Adjust to the size you want for DAGs
 
   logs:
-    path: /airflow-logs
     persistence:
-      enabled: false
+      enabled: true
+      existingClaim: ""
+      storageClassName: longhorn
+      accessMode: ReadWriteMany
+      size: 10Gi  # Adjust to the size you want for Logs
+
+  airflow:
+    extraVolumeMounts: []
+    extraVolumes: []
+    config:
+      AIRFLOW__OPENMETADATA_AIRFLOW_APIS__DAG_GENERATED_CONFIGS: "/opt/airflow/dags"
