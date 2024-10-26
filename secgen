@@ -1,0 +1,13 @@
+kubectl create secret generic airflow-mysql-secrets \
+  --from-literal=airflow-mysql-username='airflow_user' \
+  --from-literal=airflow-mysql-password='airflow_pass'
+
+
+kubectl create secret generic openmetadata-mysql-secrets \
+  --from-literal=openmetadata-mysql-username='openmetadata_user' \
+  --from-literal=openmetadata-mysql-password='openmetadata_password'
+
+kubectl create secret generic airflow-mysql-secrets \
+  --from-literal=airflow-mysql-username='airflow_user' \
+  --from-literal=airflow-mysql-password='airflow_pass' \
+  -n <namespace>
