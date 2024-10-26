@@ -1,8 +1,97 @@
-sudo mkdir -p /mnt/data/mysql
-sudo mkdir -p /mnt/data/opensearch
-sudo mkdir -p /mnt/data/airflow/dags
-sudo mkdir -p /mnt/data/airflow/logs
-sudo chmod 777 /mnt/data/mysql
-sudo chmod 777 /mnt/data/opensearch
-sudo chmod 777 /mnt/data/airflow/dags
-sudo chmod 777 /mnt/data/airflow/logs
+# MySQL configurations for Helm dependency
+mysql:
+  enabled: true
+  fullnameOverride: "mysql"
+  architecture: standalone
+  image:
+    pullPolicy: "Always"
+  auth:
+    rootPassword: "root_password"  # replace with a secure password
+  primary:
+    extraFlags: "--sort_buffer_size=10M"
+    persistence:
+      enabled: true
+      storageClass: "longhorn"       # Use Longhorn for MySQL storage
+      size: 50Gi
+    service:
+      type: ClusterIP
+      port: 3306
+  initdbScripts:
+    init_openmetadata_db_scripts.sql: |
+      CREATE DATABASE openmetadata_db;
+      CREATE USER 'openmetadata_user'@'%' IDENTIFIED BY 'openmetadata_password';
+      GRANT ALL PRIVILEGES ON openmetadata_db.* TO 'openmetadata_user'@'%' WITH GRANT OPTION;
+      commit;
+    init_airflow_db_scripts.sql: |
+      CREATE DATABASE airflow_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      CREATE USER 'airflow_user'@'%' IDENTIFIED BY 'airflow_password';
+      GRANT ALL PRIVILEGES ON airflow_db.* TO 'airflow_user'@'%' WITH GRANT OPTION;
+      commit;
+
+# OpenSearch Helm Dependency
+opensearch:
+  enabled: true
+  clusterName: opensearch
+  fullnameOverride: opensearch
+  imagePullPolicy: Always
+  opensearchJavaOpts: "-Xmx1g -Xms1g"
+  persistence:
+    enabled: true
+    storageClass: "longhorn"        # Use Longhorn for OpenSearch storage
+    size: 30Gi
+  protocol: http
+  config:
+    opensearch.yml: |
+      plugins.security.disabled: true
+  singleNode: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256M"
+    limits:
+      cpu: "2000m"
+      memory: "2048M"
+
+# Airflow configurations for Helm dependency
+airflow:
+  enabled: true
+  externalDatabase:
+    type: mysql
+    host: mysql
+    port: 3306
+    database: airflow_db
+    user: airflow_user
+    password: airflow_password       # Direct password configuration for MySQL connection
+  web:
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+  postgresql:
+    enabled: false
+  workers:
+    enabled: false
+  flower:
+    enabled: false
+  redis:
+    enabled: false
+  dags:
+    persistence:
+      enabled: true
+      storageClass: "nfs-client"     # Use NFS for DAGs storage
+      size: 1Gi
+      accessMode: ReadWriteMany
+  logs:
+    persistence:
+      enabled: true
+      storageClass: "nfs-client"     # Use NFS for logs storage
+      size: 1Gi
+      accessMode: ReadWriteMany
